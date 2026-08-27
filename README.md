@@ -9,7 +9,7 @@ Aplicación web de acceso (login) para el sistema administrativo del **Camposant
 - **Base de datos:** PostgreSQL 16
 - **Autenticación:** Laravel Breeze (stack Livewire) — login, registro, recuperación de contraseña, verificación de correo, límite de intentos (rate limiting)
 - **Infraestructura:** Docker + Docker Compose (PHP-FPM, Nginx, PostgreSQL, Node para assets)
-- **Pruebas (QA):** PHPUnit (pruebas de característica sobre autenticación y perfil)
+- **Pruebas (QA):** PHPUnit (pruebas de característica sobre autenticación y perfil) + Playwright (pruebas end-to-end del flujo de login en un navegador real)
 
 ## Requisitos
 
@@ -68,6 +68,7 @@ No es necesario tener PHP, Composer, Node ni PostgreSQL instalados localmente: t
 | `app`    | PHP-FPM (Laravel)                         | interno `9000` |
 | `db`     | PostgreSQL 16                             | `5432`      |
 | `node`   | Compila los assets de Tailwind/Vite (perfil `assets`, no se inicia con `up`) | — |
+| `e2e`    | Corre las pruebas end-to-end con Playwright (perfil `e2e`, no se inicia con `up`) | — |
 
 ## Pruebas de QA
 
@@ -81,6 +82,18 @@ docker compose exec app php artisan test
 
 Las pruebas usan SQLite en memoria (definido en `phpunit.xml`) para que corran rápido y de forma aislada, sin afectar la base de datos de PostgreSQL de desarrollo.
 
+### Pruebas end-to-end (Playwright)
+
+Simulan a un usuario real interactuando con la aplicación en un navegador (Chromium): cargar el login, ingresar credenciales inválidas y ver el error, dejar campos vacíos, iniciar sesión correctamente y llegar al panel, y cerrar sesión.
+
+Requieren que la app esté levantada (`docker compose up -d`) y con un usuario de prueba sembrado (`docker compose exec app php artisan db:seed`). Luego:
+
+```bash
+docker compose --profile e2e run --rm e2e
+```
+
+Esto instala las dependencias de Node y corre Playwright contra `http://nginx` (dentro de la red de Docker), usando la imagen oficial `mcr.microsoft.com/playwright`, que ya trae los navegadores instalados. El reporte HTML queda en `playwright-report/` dentro del proyecto.
+
 ## Estructura relevante
 
 ```
@@ -91,7 +104,9 @@ docker/
 docker-compose.yml
 app/Livewire/Forms/LoginForm.php        # Lógica y validación del login
 resources/views/livewire/pages/auth/    # Vistas de autenticación (Volt)
-tests/Feature/Auth/                     # Pruebas de QA de autenticación
+tests/Feature/Auth/                     # Pruebas de QA de autenticación (PHPUnit)
+e2e/                                     # Pruebas end-to-end (Playwright)
+playwright.config.js
 ```
 
 ## Variables de entorno principales
