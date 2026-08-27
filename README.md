@@ -8,6 +8,7 @@ Aplicación web de acceso (login) para el sistema administrativo del **Camposant
 - **Frontend:** Tailwind CSS, Vite
 - **Base de datos:** PostgreSQL 16
 - **Autenticación:** Laravel Breeze (stack Livewire) — login, registro, recuperación de contraseña, verificación de correo, límite de intentos (rate limiting)
+- **Panel de administración:** FilamentPHP (solo para usuarios marcados como administrador) — gestión de lotes y trámites
 - **Infraestructura:** Docker + Docker Compose (PHP-FPM, Nginx, PostgreSQL, Node para assets)
 - **Pruebas (QA):** PHPUnit (pruebas de característica sobre autenticación y perfil) + Playwright (pruebas end-to-end del flujo de login en un navegador real)
 
@@ -60,6 +61,22 @@ No es necesario tener PHP, Composer, Node ni PostgreSQL instalados localmente: t
 
 6. Abre la aplicación en [http://localhost:8080](http://localhost:8080).
 
+## Panel de administración (FilamentPHP)
+
+Disponible en [http://localhost:8080/admin](http://localhost:8080/admin), usando el mismo login y la misma tabla `users` de la aplicación — solo pueden entrar los usuarios con `is_admin = true` (el usuario sembrado con el seeder ya tiene ese permiso).
+
+Incluye pantallas de administración (listar, crear, editar, borrar) para:
+
+- **Usuarios** — con un interruptor para dar/quitar permiso de administrador
+- **Lotes** — código, sección, estado (disponible / ocupado / reservado) y titular
+- **Trámites** — tipo, estado, solicitante y el lote relacionado
+
+Para dar permiso de administrador a otro usuario ya existente:
+
+```bash
+docker compose exec app php artisan tinker --execute="App\Models\User::where('email', 'correo@ejemplo.com')->update(['is_admin' => true]);"
+```
+
 ## Servicios de Docker Compose
 
 | Servicio | Descripción                              | Puerto host |
@@ -104,6 +121,8 @@ docker/
 docker-compose.yml
 app/Livewire/Forms/LoginForm.php        # Lógica y validación del login
 resources/views/livewire/pages/auth/    # Vistas de autenticación (Volt)
+app/Filament/Resources/                 # Pantallas de administración (Usuarios, Lotes, Trámites)
+app/Providers/Filament/AdminPanelProvider.php  # Configuración del panel /admin
 tests/Feature/Auth/                     # Pruebas de QA de autenticación (PHPUnit)
 e2e/                                     # Pruebas end-to-end (Playwright)
 playwright.config.js
